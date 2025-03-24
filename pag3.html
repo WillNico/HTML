@@ -3,13 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Página 3</title>
+  <title>Página 3 - Jogo da Velha</title>
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
-    }
+    /* Estilos da barra de navegação */
     .nav-bar {
       background: #333;
       padding: 10px;
@@ -24,19 +20,56 @@
     .nav-bar a:hover {
       text-decoration: underline;
     }
+    /* Estilos gerais da página */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
+    }
     .container {
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      margin-top: 20px;
+      color: #333;
+    }
+    /* Estilos do tabuleiro */
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 5px;
+      margin: 20px auto;
+      width: 310px;
+    }
+    .cell {
+      width: 100px;
+      height: 100px;
+      background: #fff;
+      border: 2px solid #333;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      height: calc(100vh - 50px);
+      font-size: 2.5em;
+      cursor: pointer;
     }
-    .content-box {
-      background: rgba(255, 255, 255, 0.8);
-      padding: 40px;
-      border-radius: 15px;
-      text-align: center;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    #status {
+      margin-top: 20px;
+      font-size: 1.5em;
+      color: #333;
+    }
+    button.reset {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+    }
+    button.reset:hover {
+      background: #555;
     }
   </style>
 </head>
@@ -46,11 +79,155 @@
     <a href="pag2.html">Página 2</a>
     <a href="pag3.html">Página 3</a>
   </div>
+  
   <div class="container">
-    <div class="content-box">
-      <h1>Página 3</h1>
-      <p>Conteúdo da Página 3.</p>
+    <h1>Jogo da Velha</h1>
+    <p>Jogue contra o Expert!</p>
+    <div id="board">
+      <div class="cell" id="cell0"></div>
+      <div class="cell" id="cell1"></div>
+      <div class="cell" id="cell2"></div>
+      <div class="cell" id="cell3"></div>
+      <div class="cell" id="cell4"></div>
+      <div class="cell" id="cell5"></div>
+      <div class="cell" id="cell6"></div>
+      <div class="cell" id="cell7"></div>
+      <div class="cell" id="cell8"></div>
     </div>
+    <div id="status">Sua vez (X)</div>
+    <button class="reset" onclick="resetGame()">Reiniciar Jogo</button>
   </div>
+  
+  <script>
+    // Definições iniciais
+    const human = "X";
+    const computer = "O";
+    let board = ["", "", "", "", "", "", "", "", ""];
+    let gameOver = false;
+    
+    // Combinações vencedoras
+    const winningCombos = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6]
+    ];
+    
+    // Adiciona eventos de clique para cada célula
+    for (let i = 0; i < 9; i++) {
+      document.getElementById("cell" + i).addEventListener("click", function() {
+        if (!gameOver && board[i] === "") {
+          makeMove(i, human);
+          if (!gameOver) {
+            computerMove();
+          }
+        }
+      });
+    }
+    
+    // Função para fazer um movimento
+    function makeMove(index, player) {
+      board[index] = player;
+      document.getElementById("cell" + index).innerText = player;
+      if (checkWinner(board, player)) {
+        gameOver = true;
+        document.getElementById("status").innerText = (player === human ? "Você venceu!" : "Computador venceu!");
+      } else if (board.every(cell => cell !== "")) {
+        gameOver = true;
+        document.getElementById("status").innerText = "Empate!";
+      } else {
+        document.getElementById("status").innerText = (player === human ? "Computador jogando..." : "Sua vez (X)");
+      }
+    }
+    
+    // Verifica se um jogador venceu
+    function checkWinner(board, player) {
+      for (let combo of winningCombos) {
+        if (board[combo[0]] === player && board[combo[1]] === player && board[combo[2]] === player) {
+          return true;
+        }
+      }
+      return false;
+    }
+    
+    // Movimento do computador utilizando algoritmo Minimax
+    function computerMove() {
+      setTimeout(function() {
+        let best = bestMove();
+        if (best !== null) {
+          makeMove(best, computer);
+        }
+      }, 500);
+    }
+    
+    // Determina o melhor movimento para o computador
+    function bestMove() {
+      let bestScore = -Infinity;
+      let move = null;
+      for (let i = 0; i < 9; i++) {
+        if (board[i] === "") {
+          board[i] = computer;
+          let score = minimax(board, 0, false);
+          board[i] = "";
+          if (score > bestScore) {
+            bestScore = score;
+            move = i;
+          }
+        }
+      }
+      return move;
+    }
+    
+    // Algoritmo Minimax para avaliar movimentos
+    function minimax(newBoard, depth, isMaximizing) {
+      if (checkWinner(newBoard, computer)) {
+        return 10 - depth;
+      }
+      if (checkWinner(newBoard, human)) {
+        return depth - 10;
+      }
+      if (newBoard.every(cell => cell !== "")) {
+        return 0;
+      }
+      
+      if (isMaximizing) {
+        let bestScore = -Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (newBoard[i] === "") {
+            newBoard[i] = computer;
+            let score = minimax(newBoard, depth + 1, false);
+            newBoard[i] = "";
+            bestScore = Math.max(score, bestScore);
+          }
+        }
+        return bestScore;
+      } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < 9; i++) {
+          if (newBoard[i] === "") {
+            newBoard[i] = human;
+            let score = minimax(newBoard, depth + 1, true);
+            newBoard[i] = "";
+            bestScore = Math.min(score, bestScore);
+          }
+        }
+        return bestScore;
+      }
+    }
+    
+    // Reinicia o jogo
+    function resetGame() {
+      board = ["", "", "", "", "", "", "", "", ""];
+      gameOver = false;
+      for (let i = 0; i < 9; i++) {
+        document.getElementById("cell" + i).innerText = "";
+      }
+      document.getElementById("status").innerText = "Sua vez (X)";
+    }
+  </script>
 </body>
 </html>
