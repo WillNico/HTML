@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Página 3 - Jogo da Velha</title>
   <style>
-    /* Estilos da barra de navegação */
+
     .nav-bar {
       background: #333;
       padding: 10px;
@@ -20,7 +20,7 @@
     .nav-bar a:hover {
       text-decoration: underline;
     }
-    /* Estilos gerais da página */
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
@@ -34,7 +34,7 @@
       margin-top: 20px;
       color: #333;
     }
-    /* Estilos do tabuleiro */
+
     #board {
       display: grid;
       grid-template-columns: repeat(3, 100px);
@@ -99,13 +99,13 @@
   </div>
   
   <script>
-    // Definições iniciais
+
     const human = "X";
     const computer = "O";
     let board = ["", "", "", "", "", "", "", "", ""];
     let gameOver = false;
     
-    // Combinações vencedoras
+
     const winningCombos = [
       [0, 1, 2],
       [3, 4, 5],
@@ -117,7 +117,7 @@
       [2, 4, 6]
     ];
     
-    // Adiciona eventos de clique para cada célula
+
     for (let i = 0; i < 9; i++) {
       document.getElementById("cell" + i).addEventListener("click", function() {
         if (!gameOver && board[i] === "") {
@@ -129,7 +129,7 @@
       });
     }
     
-    // Função para fazer um movimento
+
     function makeMove(index, player) {
       board[index] = player;
       document.getElementById("cell" + index).innerText = player;
@@ -144,7 +144,7 @@
       }
     }
     
-    // Verifica se um jogador venceu
+
     function checkWinner(board, player) {
       for (let combo of winningCombos) {
         if (board[combo[0]] === player && board[combo[1]] === player && board[combo[2]] === player) {
@@ -154,7 +154,7 @@
       return false;
     }
     
-    // Movimento do computador utilizando algoritmo Minimax
+
     function computerMove() {
       setTimeout(function() {
         let best = bestMove();
@@ -164,7 +164,7 @@
       }, 500);
     }
     
-    // Determina o melhor movimento para o computador
+
     function bestMove() {
       let bestScore = -Infinity;
       let move = null;
@@ -182,7 +182,7 @@
       return move;
     }
     
-    // Algoritmo Minimax para avaliar movimentos
+
     function minimax(newBoard, depth, isMaximizing) {
       if (checkWinner(newBoard, computer)) {
         return 10 - depth;
@@ -219,7 +219,6 @@
       }
     }
     
-    // Reinicia o jogo
     function resetGame() {
       board = ["", "", "", "", "", "", "", "", ""];
       gameOver = false;
