@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Página 2</title>
+  <title>Página 2 - Soma</title>
   <style>
     body {
       margin: 0;
@@ -38,6 +38,31 @@
       text-align: center;
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     }
+    input[type="number"] {
+      padding: 10px;
+      margin: 10px;
+      width: 80px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background: #555;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -48,9 +73,23 @@
   </div>
   <div class="container">
     <div class="content-box">
-      <h1>Página 2</h1>
-      <p>Página 2.</p>
+      <h1>Página 2 - Soma</h1>
+      <p>Insira dois valores para calcular a soma:</p>
+      <input type="number" id="valor1" placeholder="Valor 1">
+      <input type="number" id="valor2" placeholder="Valor 2">
+      <br>
+      <button onclick="calcularSoma()">Calcular</button>
+      <div class="result" id="resultado"></div>
     </div>
   </div>
+
+  <script>
+    function calcularSoma() {
+      var valor1 = parseFloat(document.getElementById("valor1").value) || 0;
+      var valor2 = parseFloat(document.getElementById("valor2").value) || 0;
+      var soma = valor1 + valor2;
+      document.getElementById("resultado").innerText = "Resultado: " + soma;
+    }
+  </script>
 </body>
 </html>
