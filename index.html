@@ -9,32 +9,48 @@
       margin: 0;
       font-family: Arial, sans-serif;
       background: linear-gradient(135deg, #6dd5ed, #2193b0);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+    }
+    .nav-bar {
+      background: #333;
+      padding: 10px;
+      text-align: center;
+    }
+    .nav-bar a {
+      color: #fff;
+      margin: 0 15px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .nav-bar a:hover {
+      text-decoration: underline;
     }
     .container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: calc(100vh - 50px);
+    }
+    .welcome-box {
       background: rgba(255, 255, 255, 0.8);
       padding: 40px;
       border-radius: 15px;
       text-align: center;
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     }
-    h1 {
-      color: #333;
-      margin-bottom: 20px;
-    }
-    p {
-      color: #555;
-      font-size: 18px;
-    }
   </style>
 </head>
 <body>
+  <div class="nav-bar">
+    <a href="index.html">Página 1</a>
+    <a href="pag2.html">Página 2</a>
+    <a href="pag3.html">Página 3</a>
+  </div>
   <div class="container">
-    <h1>Bem Vindo!</h1>
-    <p>APS- Desenvolvimento Web.</p>
+    <div class="welcome-box">
+      <h1>Bem Vindo!</h1>
+      <p>Esta é a página de boas-vindas (Página 1).</p>
+    </div>
   </div>
 </body>
 </html>
