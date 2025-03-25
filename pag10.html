@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo de Três Pistas</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #ffecd2, #fcb69f);
+    }
+    .nav-bar {
+      background: #333;
+      padding: 10px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .nav-bar a {
+      color: #fff;
+      margin: 0 10px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .nav-bar a:hover {
+      text-decoration: underline;
+    }
+    .container {
+      max-width: 400px;
+      margin: 20px auto;
+      background: rgba(255,255,255,0.95);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      text-align: center;
+      position: relative;
+    }
+    canvas {
+      background: #222;
+      display: block;
+      margin: 0 auto;
+      border: 3px solid #555;
+      border-radius: 10px;
+    }
+    #scoreDisplay {
+      margin-top: 10px;
+      font-size: 1.2em;
+      color: #333;
+    }
+    p.instructions {
+      font-size: 1em;
+      color: #333;
+      margin-top: 10px;
+    }
+    /* Estilo do botão de reiniciar (inicialmente oculto) */
+    #restartButton {
+      display: none;
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1em;
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #restartButton:hover {
+      background: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="nav-bar">
+    <a href="index.html">Página 1</a>
+    <a href="pag2.html">Soma</a>
+    <a href="pag3.html">Jogo da Velha</a>
+    <a href="pag4.html">Forca</a>
+    <a href="pag5.html">Batalha Naval</a>
+    <a href="pag6.html">Jogo da Memória</a>
+    <a href="pag7.html">Adivinha Número</a>
+    <a href="pag8.html">Jogo da Cobrinha</a>
+    <a href="pag9.html">Tetris</a>
+    <a href="pag10.html">Três Pistas</a>
+  </div>
+
+  <div class="container">
+    <h1>Jogo de Três Pistas</h1>
+    <canvas id="gameCanvas" width="300" height="500"></canvas>
+    <div id="scoreDisplay">Tempo: 0 s</div>
+    <p class="instructions">Use as setas esquerda/direita ou mova o mouse para mudar de pista.</p>
+    <p class="instructions">Desvie dos obstáculos que descem e veja quanto tempo você consegue sobreviver!</p>
+    <button id="restartButton" onclick="restartGame()">Reiniciar Jogo</button>
+  </div>
+
+  <script>
+    // Configurações do canvas e do jogo
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
+    // Define três pistas; os centros de cada pista
+    const lanes = [
+      canvasWidth / 6,          // pista 1
+      canvasWidth / 2,          // pista 2
+      canvasWidth * 5 / 6       // pista 3
+    ];
+
+    // Jogador
+    const player = {
+      lane: 1,         // pista inicial (0, 1 ou 2)
+      width: 40,
+      height: 40,
+      y: canvasHeight - 60  // posição vertical fixa
+    };
+
+    // Obstáculos (array de objetos)
+    const obstacles = [];
+    const obstacleWidth = 40;
+    const obstacleHeight = 40;
+    // Velocidade inicial
+    let obstacleSpeed = 3; 
+    let lastObstacleTime = 0;
+    // Obstacle interval (tempo entre novos obstáculos) – valor inicial
+    let currentObstacleInterval = 1000; 
+
+    // Tempo e dificuldade
+    let startTime = null;
+    let survivalTime = 0;
+    const speedIncrement = 0.5; // incremento de velocidade
+
+    // Fases de dificuldade:
+    // 0 a 1 min: aumenta a cada 20s, interval = 1000ms
+    // 1 a 2 min: aumenta a cada 10s, interval = 1000ms
+    // 2 a 3 min: aumenta a cada 5s, interval = 700ms
+    // Após 3 min: aumenta a cada 3s, interval = 500ms
+
+    let gameOver = false;
+
+    // Desenha o jogador
+    function drawPlayer() {
+      const x = lanes[player.lane] - player.width / 2;
+      ctx.fillStyle = "#0f0";
+      ctx.fillRect(x, player.y, player.width, player.height);
+    }
+
+    // Desenha os obstáculos
+    function drawObstacles() {
+      ctx.fillStyle = "#f00";
+      obstacles.forEach(ob => {
+        const x = lanes[ob.lane] - obstacleWidth / 2;
+        ctx.fillRect(x, ob.y, obstacleWidth, obstacleHeight);
+      });
+    }
+
+    // Atualiza a posição dos obstáculos e remove os que saem da tela
+    function updateObstacles() {
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        obstacles[i].y += obstacleSpeed;
+        if (obstacles[i].y > canvasHeight) {
+          obstacles.splice(i, 1);
+        }
+      }
+    }
+
+    // Verifica colisão entre o jogador e obstáculos
+    function checkCollision() {
+      for (let ob of obstacles) {
+        if (player.lane === ob.lane &&
+            player.y < ob.y + obstacleHeight &&
+            player.y + player.height > ob.y) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Atualiza o score (tempo de sobrevivência)
+    function updateScore() {
+      survivalTime = Math.floor((Date.now() - startTime) / 1000);
+      document.getElementById("scoreDisplay").innerText = "Tempo: " + survivalTime + " s";
+    }
+
+    // Atualiza a dificuldade conforme o tempo decorrido
+    function updateDifficulty() {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 60000) { // 0 a 1 min
+        const increments = Math.floor(elapsed / 20000);
+        obstacleSpeed = 3 + increments * speedIncrement;
+        currentObstacleInterval = 1000;
+      } else if (elapsed < 120000) { // 1 a 2 min
+        const increments = Math.floor((elapsed - 60000) / 10000);
+        obstacleSpeed = 4.5 + increments * speedIncrement;
+        currentObstacleInterval = 1000;
+      } else if (elapsed < 180000) { // 2 a 3 min
+        const increments = Math.floor((elapsed - 120000) / 5000);
+        obstacleSpeed = 7.5 + increments * speedIncrement;
+        currentObstacleInterval = 700;
+      } else { // Após 3 min
+        const increments = Math.floor((elapsed - 180000) / 3000);
+        obstacleSpeed = 13.5 + increments * speedIncrement;
+        currentObstacleInterval = 500;
+      }
+    }
+
+    // Função principal de atualização do jogo
+    function updateGame() {
+      if (!startTime) startTime = Date.now();
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+      updateScore();
+      updateDifficulty();
+
+      // Cria novos obstáculos conforme o intervalo atual
+      if (Date.now() - lastObstacleTime > currentObstacleInterval) {
+        obstacles.push({ lane: Math.floor(Math.random() * 3), y: -obstacleHeight });
+        lastObstacleTime = Date.now();
+      }
+
+      updateObstacles();
+      drawPlayer();
+      drawObstacles();
+
+      if (checkCollision()) {
+        gameOver = true;
+        ctx.fillStyle = "rgba(0,0,0,0.7)";
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        ctx.fillStyle = "#fff";
+        ctx.font = "24px Arial";
+        ctx.fillText("Game Over!", canvasWidth / 2 - 60, canvasHeight / 2);
+        ctx.font = "18px Arial";
+        ctx.fillText("Sobreviveu: " + survivalTime + " s", canvasWidth / 2 - 70, canvasHeight / 2 + 30);
+        // Exibe o botão de reiniciar
+        document.getElementById("restartButton").style.display = "block";
+        return;
+      }
+
+      requestAnimationFrame(updateGame);
+    }
+
+    // Reinicia o jogo e esconde o botão de reiniciar
+    function restartGame() {
+      // Limpa o board e reinicia variáveis
+      for (let y = 0; y < canvasHeight; y += 1) {} // placeholder, board é um array de obstáculos
+      obstacles.length = 0;
+      score = 0;
+      startTime = Date.now();
+      lastObstacleTime = Date.now();
+      gameOver = false;
+      player.lane = 1;
+      obstacleSpeed = 3;
+      document.getElementById("restartButton").style.display = "none";
+      requestAnimationFrame(updateGame);
+    }
+
+    // Movimenta o jogador via teclado
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") {
+        if (player.lane > 0) player.lane--;
+      } else if (e.key === "ArrowRight") {
+        if (player.lane < 2) player.lane++;
+      }
+    });
+
+    // Permite mover o jogador com o mouse
+    canvas.addEventListener("mousemove", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      if (x < canvasWidth / 3) {
+        player.lane = 0;
+      } else if (x < 2 * canvasWidth / 3) {
+        player.lane = 1;
+      } else {
+        player.lane = 2;
+      }
+    });
+
+    // Inicia o jogo
+    function startGame() {
+      startTime = Date.now();
+      lastObstacleTime = Date.now();
+      obstacles.length = 0;
+      gameOver = false;
+      player.lane = 1;
+      obstacleSpeed = 3;
+      requestAnimationFrame(updateGame);
+    }
+
+    startGame();
+  </script>
+</body>
+</html>
