@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batalha Naval - 20x20</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #e0f7fa;
+    }
+    .nav-bar {
+      background: #333;
+      padding: 10px;
+      text-align: center;
+    }
+    .nav-bar a {
+      color: #fff;
+      margin: 0 15px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .nav-bar a:hover {
+      text-decoration: underline;
+    }
+    .container {
+      max-width: 980px;
+      margin: 20px auto;
+      text-align: center;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(30, 20px);
+      grid-gap: 1px;
+      margin: 20px auto;
+      background: #333;
+      width: fit-content;
+    }
+    .cell {
+      width: 20px;
+      height: 20px;
+      background: #b2ebf2; /* cor da água */
+      cursor: pointer;
+    }
+    .cell.hit {
+      background: red;
+    }
+    .cell.miss {
+      background: lightgray;
+    }
+  </style>
+</head>
+<body>
+  <div class="nav-bar">
+    <a href="index.html">Pagina Principal</a>
+    <a href="pag2.html">Soma</a>
+    <a href="pag3.html">Jogo da velha</a>
+    <a href="pag4.html">Forca</a>
+    <a href="pag5.html">Batalha Naval</a>
+    <a href="pag6.html">Jogo da memória</a>
+    <a href="pag7.html">Adivinha número</a>
+  </div>
+  
+  <div class="container">
+    <h1>Batalha Naval - 30x30</h1>
+    <div id="status">Embarcações restantes: 0</div>
+    <div id="board"></div>
+    <button onclick="initGame()">Reiniciar Jogo</button>
+  </div>
+  
+  <script>
+    // Tamanho do tabuleiro: 30x30
+    const boardSize = 19;
+    const totalCells = boardSize * boardSize;
+    
+    // Arrays que armazenam o estado do jogo
+    let board = [];   // Cada posição: -1 (água) ou índice da embarcação
+    let shots = [];   // Guarda "hit", "miss" ou null para cada célula
+    let ships = [];   // Lista de embarcações (cada uma com posições, acertos e status)
+    let remainingShips = 0;
+    
+    // Definição dos tamanhos das embarcações
+    // Aqui usamos 10 embarcações com tamanhos variados
+    const shipSizes = [5, 4, 4, 3, 3, 3, 2, 2, 2, 2];
+    
+    // Inicializa o jogo
+    function initGame() {
+      board = new Array(totalCells).fill(-1);
+      shots = new Array(totalCells).fill(null);
+      ships = [];
+      
+      // Coloca as embarcações no tabuleiro
+      for (let size of shipSizes) {
+        placeShip(size);
+      }
+      remainingShips = ships.length;
+      updateStatus();
+      renderBoard();
+    }
+    
+    // Função para posicionar uma embarcação de determinado tamanho
+    function placeShip(size) {
+      let placed = false;
+      let attempts = 0;
+      while (!placed && attempts < 1000) {
+        attempts++;
+        // 0 = horizontal, 1 = vertical
+        let orientation = Math.floor(Math.random() * 2);
+        let row = Math.floor(Math.random() * boardSize);
+        let col = Math.floor(Math.random() * boardSize);
+        
+        // Verifica se a embarcação cabe no tabuleiro
+        if (orientation === 0 && col + size > boardSize) continue;
+        if (orientation === 1 && row + size > boardSize) continue;
+        
+        // Verifica se há sobreposição com outra embarcação
+        let valid = true;
+        let positions = [];
+        for (let i = 0; i < size; i++) {
+          let r = row + (orientation === 1 ? i : 0);
+          let c = col + (orientation === 0 ? i : 0);
+          let index = r * boardSize + c;
+          if (board[index] !== -1) {
+            valid = false;
+            break;
+          }
+          positions.push(index);
+        }
+        if (!valid) continue;
+        
+        // Marca a embarcação no tabuleiro usando o índice dela
+        let shipIndex = ships.length;
+        for (let pos of positions) {
+          board[pos] = shipIndex;
+        }
+        ships.push({
+          positions: positions,
+          hits: new Array(positions.length).fill(false),
+          sunk: false
+        });
+        placed = true;
+      }
+    }
+    
+    // Cria e exibe o tabuleiro na página
+    function renderBoard() {
+      const boardDiv = document.getElementById("board");
+      boardDiv.innerHTML = "";
+      for (let i = 0; i < totalCells; i++) {
+        const cellDiv = document.createElement("div");
+        cellDiv.classList.add("cell");
+        cellDiv.id = "cell-" + i;
+        cellDiv.addEventListener("click", function() {
+          handleShot(i);
+        });
+        boardDiv.appendChild(cellDiv);
+      }
+    }
+    
+    // Trata o disparo do jogador em uma determinada célula
+    function handleShot(index) {
+      // Se já foi disparado nesta célula, não faz nada
+      if (shots[index] !== null) return;
+      
+      if (board[index] !== -1) {
+        // Acertou: a célula pertence a uma embarcação
+        shots[index] = "hit";
+        document.getElementById("cell-" + index).classList.add("hit");
+        let shipIndex = board[index];
+        let ship = ships[shipIndex];
+        let posIndex = ship.positions.indexOf(index);
+        if (posIndex !== -1) {
+          ship.hits[posIndex] = true;
+        }
+        // Verifica se a embarcação foi totalmente atingida (afundada)
+        if (!ship.sunk && ship.hits.every(h => h)) {
+          ship.sunk = true;
+          remainingShips--;
+          updateStatus();
+          // Destaca as células da embarcação afundada (opcional)
+          ship.positions.forEach(pos => {
+            document.getElementById("cell-" + pos).style.border = "2px solid black";
+          });
+        }
+      } else {
+        // Errou: marcou água
+        shots[index] = "miss";
+        document.getElementById("cell-" + index).classList.add("miss");
+      }
+      
+      // Se todas as embarcações foram afundadas, exibe mensagem de vitória
+      if (remainingShips === 0) {
+        document.getElementById("status").innerText = "Parabéns! Você afundou todas as embarcações!";
+      }
+    }
+    
+    // Atualiza o status exibido com o número de embarcações restantes
+    function updateStatus() {
+      document.getElementById("status").innerText = "Embarcações restantes: " + remainingShips;
+    }
+    
+    window.onload = initGame;
+  </script>
+</body>
+</html>

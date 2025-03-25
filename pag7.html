@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo do Adivinha 4 Números</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #89f7fe, #66a6ff);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .nav-bar {
+      background: #333;
+      width: 100%;
+      padding: 10px;
+      text-align: center;
+    }
+    .nav-bar a {
+      color: #fff;
+      margin: 0 10px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .nav-bar a:hover {
+      text-decoration: underline;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      max-width: 800px;
+      width: 90%;
+    }
+    .wrapper {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .game-container {
+      flex: 1;
+      min-width: 250px;
+      margin-right: 20px;
+    }
+    .history-container {
+      flex: 1;
+      min-width: 250px;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    input[type="text"] {
+      padding: 10px;
+      font-size: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      background: #555;
+    }
+    #message {
+      margin-top: 10px;
+      font-size: 1.2em;
+      color: #333;
+      min-height: 40px;
+    }
+    .history-container h3 {
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .history-container ul {
+      list-style-type: none;
+      padding: 0;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .history-container li {
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .history-container li:last-child {
+      border-bottom: none;
+    }
+    .digit {
+      padding: 3px 6px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+    .correct {
+      background-color: #c8f7c5;
+      color: green;
+      border-color: green;
+    }
+  </style>
+</head>
+<body>
+  <div class="nav-bar">
+    <a href="index.html">Pagina Principal</a>
+    <a href="pag2.html">Soma</a>
+    <a href="pag3.html">Jogo da velha</a>
+    <a href="pag4.html">Forca</a>
+    <a href="pag5.html">Batalha Naval</a>
+    <a href="pag6.html">Jogo da memória</a>
+    <a href="pag7.html">Adivinha número</a>
+  </div>
+  <div class="container">
+    <h1>Jogo do Adivinha 4 Números</h1>
+    <p>Advinhe o número secreto de 4 dígitos!</p>
+    <div class="wrapper">
+      <div class="game-container">
+        <input type="text" id="guessInput" placeholder="Digite um número de 4 dígitos">
+        <button onclick="makeGuess()">Adivinhar</button>
+        <div id="message"></div>
+        <button onclick="resetGame()">Reiniciar Jogo</button>
+      </div>
+      <div class="history-container">
+        <h3>Histórico de Palpites</h3>
+        <ul id="guessHistory"></ul>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let secretNumber = "";
+    let guesses = [];
+    
+    function generateSecret() {
+      // Gera um número de 4 dígitos, preenchendo com zeros à esquerda se necessário
+      secretNumber = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+      console.log("Número secreto:", secretNumber); // Para depuração
+    }
+    
+    function makeGuess() {
+      const guessInput = document.getElementById("guessInput");
+      const guess = guessInput.value.trim();
+      
+      if (!/^\d{4}$/.test(guess)) {
+        alert("Por favor, insira um número válido de 4 dígitos.");
+        return;
+      }
+      
+      if (guesses.find(g => g.value === guess)) {
+        alert("Você já tentou esse número!");
+        return;
+      }
+      
+      // Processa o palpite e armazena o feedback para exibição
+      let feedback = getFeedback(guess);
+      guesses.push({ value: guess, feedback: feedback });
+      updateHistory();
+      
+      const messageDiv = document.getElementById("message");
+      if (guess === secretNumber) {
+        messageDiv.innerText = "Parabéns! Você acertou o número secreto: " + secretNumber;
+      } else {
+        messageDiv.innerText = "Resultado: " + feedback.correctPosition + " dígitos na posição certa e " + feedback.correctDigit + " dígitos corretos em posição errada.";
+      }
+      guessInput.value = "";
+    }
+    
+    // Retorna um objeto com feedback sobre o palpite
+    function getFeedback(guess) {
+      let correctPosition = 0;
+      let correctDigit = 0;
+      let secretDigits = secretNumber.split("");
+      let guessDigits = guess.split("");
+      
+      // Cria cópias para não modificar os arrays originais
+      let secretCopy = secretDigits.slice();
+      let guessCopy = guessDigits.slice();
+      
+      // Verifica os dígitos na posição certa
+      for (let i = 0; i < 4; i++) {
+        if (guessCopy[i] === secretCopy[i]) {
+          correctPosition++;
+          guessCopy[i] = null;
+          secretCopy[i] = null;
+        }
+      }
+      
+      // Verifica os dígitos corretos mas fora de posição
+      for (let i = 0; i < 4; i++) {
+        if (guessCopy[i] !== null) {
+          let index = secretCopy.indexOf(guessCopy[i]);
+          if (index !== -1) {
+            correctDigit++;
+            secretCopy[index] = null;
+          }
+        }
+      }
+      
+      return { correctPosition, correctDigit };
+    }
+    
+    function updateHistory() {
+      const historyList = document.getElementById("guessHistory");
+      historyList.innerHTML = "";
+      guesses.forEach((item, index) => {
+        const li = document.createElement("li");
+        // Cria uma exibição para cada dígito
+        for (let i = 0; i < 4; i++) {
+          const span = document.createElement("span");
+          span.classList.add("digit");
+          span.innerText = item.value[i];
+          // Se o dígito estiver correto na posição, adiciona a classe "correct"
+          if (item.value[i] === secretNumber[i]) {
+            span.classList.add("correct");
+          }
+          li.appendChild(span);
+        }
+        // Exibe também o feedback numérico ao lado
+        const feedbackSpan = document.createElement("span");
+        feedbackSpan.style.marginLeft = "10px";
+        feedbackSpan.innerText = `- ${item.feedback.correctPosition} na posição certa, ${item.feedback.correctDigit} fora.`;
+        li.appendChild(feedbackSpan);
+        historyList.appendChild(li);
+      });
+    }
+    
+    function resetGame() {
+      guesses = [];
+      generateSecret();
+      updateHistory();
+      document.getElementById("message").innerText = "";
+      document.getElementById("guessInput").value = "";
+    }
+    
+    window.onload = function() {
+      generateSecret();
+    }
+  </script>
+</body>
+</html>
