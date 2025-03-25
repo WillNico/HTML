@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tetris</title>
+  <title>Tetris Responsivo</title>
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
-      /* Removido overflow: hidden para permitir rolagem */
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -33,20 +32,39 @@
     .container {
       background: rgba(255, 255, 255, 0.95);
       padding: 20px;
-      margin: 20px 0;  /* Ajustado para garantir espaçamento vertical */
+      margin: 20px 0;
       border-radius: 10px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.2);
       text-align: center;
-      max-width: 600px;
+      /* Permite que o container se expanda para acomodar os elementos lado a lado */
       width: 90%;
+      max-width: 480px;
       position: relative;
     }
-    canvas {
+    .game-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 20px;
+    }
+    /* Canvas principal do jogo */
+    #tetrisCanvas {
       background: #000;
       border: 3px solid #555;
       border-radius: 10px;
       display: block;
-      margin: 0 auto;
+    }
+    /* Pré-visualização da próxima peça */
+    .next-piece {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .next-piece h3 {
+      margin-bottom: 10px;
+      color: #333;
     }
     #scoreDisplay {
       margin-top: 10px;
@@ -76,23 +94,31 @@
 
   <div class="container">
     <h1>Tetris</h1>
-    <canvas id="tetrisCanvas" width="300" height="600"></canvas>
+    <!-- Container flex para posicionar o jogo e a pré-visualização lado a lado -->
+    <div class="game-wrapper">
+      <canvas id="tetrisCanvas"></canvas>
+      <div class="next-piece">
+        <h3>Próxima Peça</h3>
+        <canvas id="nextCanvas"></canvas>
+      </div>
+    </div>
     <div id="scoreDisplay">Pontuação: 0</div>
-    <p>Clique ou toque na peça para girá-la. Utilize as teclas: ←/→ para mover, ↑ para girar e ↓ para acelerar a queda.</p>
+    <p>
+      Clique ou toque na peça para girá-la. Use as teclas: ←/→ para mover, ↑ para girar e ↓ para acelerar a queda.<br>
+      Em dispositivos mobile, arraste para mover e toque para girar.
+    </p>
   </div>
 
   <script>
+    // Parâmetros do jogo
+    const COLS = 10;
+    const ROWS = 20;
+    let BLOCK_SIZE = 30; // valor máximo para cada bloco
+
     const canvas = document.getElementById('tetrisCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Configurações do tabuleiro
-    const COLS = 10;
-    const ROWS = 20;
-    const BLOCK_SIZE = 30; // cada bloco tem 30px
-    canvas.width = COLS * BLOCK_SIZE;
-    canvas.height = ROWS * BLOCK_SIZE;
-
-    // Cria uma matriz (board) preenchida com 0 (vazio)
+    // Cria o board (matriz) preenchido com zeros
     function createMatrix(rows, cols) {
       const matrix = [];
       for (let i = 0; i < rows; i++) {
@@ -102,7 +128,7 @@
     }
     const board = createMatrix(ROWS, COLS);
 
-    // Tetrominós e suas cores (valores > 0)
+    // Tetrominós e suas cores
     const tetrominoes = {
       'T': [
         [0, 1, 0],
@@ -152,7 +178,7 @@
       'red'
     ];
 
-    // Cria uma peça do tipo tetrominóide
+    // Cria uma peça
     function createPiece(type) {
       return {
         matrix: tetrominoes[type],
@@ -164,23 +190,41 @@
       const type = types[Math.floor(Math.random() * types.length)];
       return createPiece(type);
     }
-    let piece = createRandomPiece();
 
-    // Desenha uma matriz (peça ou board) com um offset
-    function drawMatrix(matrix, offset) {
+    let piece = createRandomPiece();
+    let nextPiece = createRandomPiece();
+
+    // Desenha uma matriz (peça ou board) em um contexto com offset
+    function drawMatrixOnContext(context, matrix, offset) {
       matrix.forEach((row, y) => {
         row.forEach((value, x) => {
           if (value !== 0) {
-            ctx.fillStyle = colors[value];
-            ctx.fillRect((x + offset.x) * BLOCK_SIZE, (y + offset.y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-            ctx.strokeStyle = '#000';
-            ctx.strokeRect((x + offset.x) * BLOCK_SIZE, (y + offset.y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            context.fillStyle = colors[value];
+            context.fillRect((x + offset.x) * BLOCK_SIZE, (y + offset.y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            context.strokeStyle = '#000';
+            context.strokeRect((x + offset.x) * BLOCK_SIZE, (y + offset.y) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
           }
         });
       });
     }
+    function drawMatrix(matrix, offset) {
+      drawMatrixOnContext(ctx, matrix, offset);
+    }
 
-    // Desenha o board e a peça ativa
+    // Atualiza a pré-visualização da próxima peça
+    function updateNext() {
+      const nextCanvas = document.getElementById('nextCanvas');
+      const nextCtx = nextCanvas.getContext('2d');
+      nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+      const matrix = nextPiece.matrix;
+      const pieceWidth = matrix[0].length * BLOCK_SIZE;
+      const pieceHeight = matrix.length * BLOCK_SIZE;
+      const offsetX = (nextCanvas.width - pieceWidth) / (2 * BLOCK_SIZE);
+      const offsetY = (nextCanvas.height - pieceHeight) / (2 * BLOCK_SIZE);
+      drawMatrixOnContext(nextCtx, matrix, { x: offsetX, y: offsetY });
+    }
+
+    // Desenha o board e a peça atual
     function draw() {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -188,7 +232,7 @@
       drawMatrix(piece.matrix, piece.pos);
     }
 
-    // Verifica colisão entre a peça e o board, incluindo limites
+    // Verifica colisão da peça com o board
     function collide(board, piece) {
       const m = piece.matrix;
       const o = piece.pos;
@@ -210,7 +254,7 @@
       return false;
     }
 
-    // Junta a peça com o board (ao colidir)
+    // Junta a peça ao board
     function merge(board, piece) {
       piece.matrix.forEach((row, y) => {
         row.forEach((value, x) => {
@@ -221,7 +265,8 @@
       });
     }
 
-    // Remove linhas completas e adiciona pontos
+    // Remove linhas completas e atualiza a pontuação
+    let score = 0;
     function sweep() {
       outer: for (let y = ROWS - 1; y >= 0; y--) {
         for (let x = 0; x < COLS; x++) {
@@ -237,12 +282,11 @@
       }
     }
 
-    // Atualiza a exibição dos pontos na página
     function updateScore() {
       document.getElementById('scoreDisplay').innerText = "Pontuação: " + score;
     }
 
-    // Rotaciona a matriz (peça) no sentido horário
+    // Rotaciona a peça
     function rotate(matrix) {
       for (let y = 0; y < matrix.length; y++) {
         for (let x = 0; x < y; x++) {
@@ -252,9 +296,8 @@
       matrix.forEach(row => row.reverse());
     }
 
-    // Queda automática da peça
     let dropCounter = 0;
-    let dropInterval = 1000; // tempo em ms para queda automática
+    let dropInterval = 1000;
     let lastTime = 0;
     function update(time = 0) {
       const deltaTime = time - lastTime;
@@ -266,7 +309,10 @@
           piece.pos.y--;
           merge(board, piece);
           sweep();
-          piece = createRandomPiece();
+          // Troca pela próxima peça e gera nova pré-visualização
+          piece = nextPiece;
+          nextPiece = createRandomPiece();
+          updateNext();
           if (collide(board, piece)) {
             alert("Game Over! Pontuação: " + score);
             resetGame();
@@ -279,7 +325,6 @@
       requestAnimationFrame(update);
     }
 
-    // Inicia ou reinicia o jogo
     function resetGame() {
       for (let y = 0; y < ROWS; y++) {
         board[y].fill(0);
@@ -287,14 +332,15 @@
       score = 0;
       updateScore();
       piece = createRandomPiece();
+      nextPiece = createRandomPiece();
+      updateNext();
       dropCounter = 0;
       lastTime = 0;
       update();
     }
 
-    // Movimentos via teclado: ←/→ para mover, ↑ para girar, ↓ para acelerar a queda
+    // Suporte a teclado e touch
     document.addEventListener('keydown', (e) => {
-      // Impede o comportamento padrão (rolagem)
       if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) {
         e.preventDefault();
       }
@@ -317,7 +363,6 @@
       draw();
     });
 
-    // Suporte para clique/touch na peça para girar e arrastar para mover
     let isDragging = false;
     let dragStartX = 0;
     let initialPieceX = 0;
@@ -398,7 +443,24 @@
       }
     });
 
-    // Inicia o jogo
+    // Ajusta o tamanho dos canvas: mantém BLOCK_SIZE fixo em 30, a não ser que o container seja menor que 300px
+    function resizeCanvas() {
+      const container = document.querySelector('.container');
+      const containerWidth = container.clientWidth;
+      BLOCK_SIZE = Math.min(30, containerWidth / COLS);
+      canvas.width = COLS * BLOCK_SIZE;
+      canvas.height = ROWS * BLOCK_SIZE;
+      const nextCanvas = document.getElementById('nextCanvas');
+      nextCanvas.width = 4 * BLOCK_SIZE;
+      nextCanvas.height = 4 * BLOCK_SIZE;
+      draw();
+      updateNext();
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // Inicializa
+    resizeCanvas();
     resetGame();
   </script>
 </body>
