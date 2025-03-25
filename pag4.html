@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo da Forca - Animais</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #ffecd2, #fcb69f);
+    }
+    .nav-bar {
+      background: #333;
+      padding: 10px;
+      text-align: center;
+    }
+    .nav-bar a {
+      color: #fff;
+      margin: 0 15px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .nav-bar a:hover {
+      text-decoration: underline;
+    }
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    #word {
+      font-size: 2em;
+      letter-spacing: 10px;
+      margin: 20px 0;
+    }
+    #wrongLetters {
+      font-size: 1.2em;
+      color: #d9534f;
+      margin-bottom: 20px;
+    }
+    #hangmanDrawing {
+      font-family: monospace;
+      white-space: pre;
+      font-size: 16px;
+      margin: 20px 0;
+      line-height: 1.2;
+    }
+    input[type="text"] {
+      padding: 10px;
+      font-size: 16px;
+      width: 50px;
+      text-align: center;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 10px;
+      cursor: pointer;
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background: #555;
+    }
+    #message {
+      margin-top: 20px;
+      font-size: 1.5em;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="nav-bar">
+    <a href="index.html">Página 1</a>
+    <a href="pag2.html">Página 2</a>
+    <a href="pag3.html">Página 3</a>
+    <a href="pag4.html">Página 4</a>
+  </div>
+  
+  <div class="container">
+    <h1>Jogo da Forca - Animais</h1>
+    <p>Adivinhe o nome do animal:</p>
+    <div id="word">_ _ _ _ _</div>
+    <div id="wrongLetters">Erros: 0 / 6 - Letras erradas:</div>
+    <pre id="hangmanDrawing"></pre>
+    <input type="text" id="letterInput" maxlength="1" placeholder="Letra">
+    <button onclick="guessLetter()">Adivinhar</button>
+    <br>
+    <button onclick="resetGame()">Reiniciar Jogo</button>
+    <div id="message"></div>
+  </div>
+  
+  <script>
+    // Lista de animais em português
+    const animals = [
+      "cachorro",
+      "gato",
+      "elefante",
+      "girafa",
+      "leão",
+      "tigre",
+      "zebra",
+      "coelho",
+      "macaco",
+      "sapo",
+      "vaca",
+      "porco",
+      "panda",
+      "ornitorrinco"
+    ];
+    
+    let chosenWord = "";
+    let guessedLetters = [];
+    let wrongLetters = [];
+    const maxWrong = 6;
+    
+    // Estados do boneco na forca
+    const hangmanStates = [
+      `
++---+
+|   |
+    |
+    |
+    |
+    |
+=======`,
+      `
++---+
+|   |
+O   |
+    |
+    |
+    |
+=======`,
+      `
++---+
+|   |
+O   |
+|   |
+    |
+    |
+=======`,
+      `
++---+
+|   |
+O   |
+/|  |
+    |
+    |
+=======`,
+      `
++---+
+|   |
+O   |
+/|\\ |
+    |
+    |
+=======`,
+      `
++---+
+|   |
+O   |
+/|\\ |
+/    |
+    |
+=======`,
+      `
++---+
+|   |
+O   |
+/|\\ |
+/ \\ |
+    |
+=======`
+    ];
+    
+    // Seleciona uma palavra aleatória e inicializa o jogo
+    function initGame() {
+      const randomIndex = Math.floor(Math.random() * animals.length);
+      chosenWord = animals[randomIndex];
+      guessedLetters = [];
+      wrongLetters = [];
+      document.getElementById("message").innerText = "";
+      updateWordDisplay();
+      updateWrongLetters();
+      document.getElementById("letterInput").value = "";
+      document.getElementById("letterInput").disabled = false;
+    }
+    
+    // Atualiza a exibição da palavra com letras adivinhadas e underscores
+    function updateWordDisplay() {
+      let display = "";
+      for (let letter of chosenWord) {
+        if (guessedLetters.includes(letter)) {
+          display += letter.toUpperCase() + " ";
+        } else {
+          display += "_ ";
+        }
+      }
+      document.getElementById("word").innerText = display.trim();
+    }
+    
+    // Atualiza a exibição dos erros, das letras erradas e do desenho do boneco
+    function updateWrongLetters() {
+      document.getElementById("wrongLetters").innerText = "Erros: " + wrongLetters.length + " / " + maxWrong + " - Letras erradas: " + wrongLetters.join(", ");
+      document.getElementById("hangmanDrawing").innerText = hangmanStates[wrongLetters.length];
+    }
+    
+    // Função para adivinhar a letra
+    function guessLetter() {
+      const input = document.getElementById("letterInput");
+      let letter = input.value.toLowerCase();
+      input.value = "";
+      if (letter === "" || !letter.match(/[a-zçáéíóúâêîôûãõ]/)) {
+        alert("Por favor, insira uma letra válida.");
+        return;
+      }
+      if (guessedLetters.includes(letter) || wrongLetters.includes(letter)) {
+        alert("Você já tentou essa letra!");
+        return;
+      }
+      
+      if (chosenWord.includes(letter)) {
+        guessedLetters.push(letter);
+      } else {
+        wrongLetters.push(letter);
+      }
+      
+      updateWordDisplay();
+      updateWrongLetters();
+      checkGameStatus();
+    }
+    
+    // Verifica o status do jogo (vitória ou derrota)
+    function checkGameStatus() {
+      // Verifica se o jogador ganhou
+      let wordGuessed = true;
+      for (let letter of chosenWord) {
+        if (!guessedLetters.includes(letter)) {
+          wordGuessed = false;
+          break;
+        }
+      }
+      if (wordGuessed) {
+        document.getElementById("message").innerText = "Parabéns! Você adivinhou o animal: " + chosenWord.toUpperCase();
+        document.getElementById("letterInput").disabled = true;
+        return;
+      }
+      
+      // Verifica se o jogador perdeu
+      if (wrongLetters.length >= maxWrong) {
+        document.getElementById("message").innerText = "Você perdeu! O animal era: " + chosenWord.toUpperCase();
+        document.getElementById("letterInput").disabled = true;
+      }
+    }
+    
+    // Reinicia o jogo
+    function resetGame() {
+      initGame();
+    }
+    
+    // Inicializa o jogo quando a página carregar
+    window.onload = initGame;
+  </script>
+</body>
+</html>
